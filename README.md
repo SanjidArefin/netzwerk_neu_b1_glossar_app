@@ -6,7 +6,7 @@ apps bundle the curated 9,435-word dataset and need no internet connection.
 ## Download
 
 
-[Download B1 Glossar for Android](https://github.com/SanjidArefin/netzwerk_neu_b1_glossar_soft/releases/download/v1.2.0/B1.Glossar.Android.1.2.0.apk)
+[Download B1 Glossar for Android](https://github.com/SanjidArefin/netzwerk_neu_b1_glossar_app/releases/download/v1.2.0/B1.Glossar.Android.1.2.0.apk)
 
 To install the Android app, open the downloaded APK. Android may ask you to
 allow your browser or file manager to install apps from unknown sources.
