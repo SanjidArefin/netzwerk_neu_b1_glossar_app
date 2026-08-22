@@ -5,7 +5,6 @@ apps bundle the curated 9,435-word dataset and need no internet connection.
 
 ## Download
 
-[Download B1 Glossar for Windows](https://github.com/SanjidArefin/netzwerk_neu_b1_glossar_soft/releases/download/v1.1.2/B1.Glossar.Setup.1.1.2.exe)
 
 [Download B1 Glossar for Android](https://github.com/SanjidArefin/netzwerk_neu_b1_glossar_soft/releases/download/v1.2.0/B1.Glossar.Android.1.2.0.apk)
 
