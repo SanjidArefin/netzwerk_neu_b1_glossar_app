@@ -185,12 +185,14 @@ class WordRow extends StatelessWidget {
               if (isBatchMode) ...[
                 SizedBox(
                   width: 24,
-                  child: Checkbox(
-                    value: isSelectedForBatch,
-                    activeColor: AppColors.green,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    visualDensity: VisualDensity.compact,
-                    onChanged: (_) => onToggleSelection?.call(),
+                  child: IgnorePointer(
+                    child: Checkbox(
+                      value: isSelectedForBatch,
+                      activeColor: AppColors.green,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      onChanged: null,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),

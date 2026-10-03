@@ -372,6 +372,7 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
             );
             widget.onGlossaryChanged(updated);
             if (mounted) {
+              _searchDebounce?.cancel();
               setState(() {
                 _chapterNumber = chapter;
                 _query = '';
