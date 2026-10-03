@@ -2,6 +2,7 @@ import 'package:b1_glossar_mobile/glossary.dart';
 import 'package:b1_glossar_mobile/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 GlossaryData buildTestGlossary() {
   return const GlossaryData(
@@ -71,6 +72,7 @@ void main() {
   );
 
   testWidgets('theme toggle enables light mode', (tester) async {
+    SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(
       B1GlossarApp(loader: () async => buildTestGlossary()),
     );
