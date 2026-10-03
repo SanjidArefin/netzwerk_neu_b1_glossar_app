@@ -100,6 +100,77 @@ class GlossaryService {
     return load();
   }
 
+  /// Deletes a single entry identified by chapter + word.
+  /// Throws [GlossaryException] if not found.
+  Future<GlossaryData> deleteEntry({
+    required int chapter,
+    required String word,
+  }) async {
+    final glossary = await load();
+    _ensureChapterExists(glossary, chapter);
+
+    final raw = await _readRaw();
+    final chapters = raw['chapters'] as List;
+    final target = chapters.firstWhere((c) => c['number'] == chapter);
+    final entries = target['entries'] as List;
+    // removeWhere returns void, so the match count must be taken first.
+    final matches = entries.where((e) => e['word'] == word).length;
+    if (matches == 0) {
+      throw GlossaryException('"$word" was not found in chapter $chapter.');
+    }
+    entries.removeWhere((e) => e['word'] == word);
+
+    raw['totalEntries'] = chapters.fold<int>(
+      0,
+      (sum, c) => sum + (c['entries'] as List).length,
+    );
+    await _writeRaw(raw);
+    return load();
+  }
+
+  /// Deletes multiple entries at once.
+  /// Each item in [compositeIds] is "$chapter|$word".
+  /// Silently skips entries that are not found; throws if none were removed.
+  Future<GlossaryData> deleteEntries(List<String> compositeIds) async {
+    if (compositeIds.isEmpty) {
+      throw const GlossaryException('No entries selected.');
+    }
+
+    final raw = await _readRaw();
+    final chapters = raw['chapters'] as List;
+    var removed = 0;
+
+    for (final id in compositeIds) {
+      final sep = id.indexOf('|');
+      if (sep == -1) continue;
+      final chapter = int.tryParse(id.substring(0, sep));
+      final word = id.substring(sep + 1);
+      if (chapter == null) continue;
+
+      final target = chapters.firstWhere(
+        (c) => c['number'] == chapter,
+        orElse: () => null,
+      );
+      if (target == null) continue;
+      final entries = target['entries'] as List;
+      final matches = entries.where((e) => e['word'] == word).length;
+      if (matches == 0) continue;
+      entries.removeWhere((e) => e['word'] == word);
+      removed += matches;
+    }
+
+    if (removed == 0) {
+      throw const GlossaryException('No entries were removed.');
+    }
+
+    raw['totalEntries'] = chapters.fold<int>(
+      0,
+      (sum, c) => sum + (c['entries'] as List).length,
+    );
+    await _writeRaw(raw);
+    return load();
+  }
+
   Future<Map<String, dynamic>> _readRaw() async {
     final file = await _file();
     final source = await file.readAsString();
@@ -168,3 +239,6 @@ class GlossaryException implements Exception {
   @override
   String toString() => message;
 }
+
+/// Encodes a chapter+word pair into the id format used by [GlossaryService.deleteEntries].
+String glossaryCompositeId(int chapter, String word) => '$chapter|$word';

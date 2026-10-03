@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../glossary.dart';
@@ -103,6 +104,9 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
   // dataset, typing "abendessen" would otherwise trigger 10 full re-filters.
   Timer? _searchDebounce;
 
+  bool _isBatchMode = false;
+  final Set<String> _batchSelectedIds = <String>{};
+
   @override
   void didUpdateWidget(GlossaryBrowser oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -189,6 +193,109 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
     );
   }
 
+  void _enterBatchMode() {
+    setState(() {
+      _isBatchMode = true;
+      _batchSelectedIds.clear();
+    });
+  }
+
+  void _exitBatchMode() {
+    setState(() {
+      _isBatchMode = false;
+      _batchSelectedIds.clear();
+    });
+  }
+
+  void _toggleBatchSelection(GlossaryEntry entry) {
+    setState(() {
+      final id = glossaryCompositeId(entry.chapterNumber, entry.word);
+      if (_batchSelectedIds.contains(id)) {
+        _batchSelectedIds.remove(id);
+      } else {
+        _batchSelectedIds.add(id);
+      }
+    });
+  }
+
+  Future<void> _confirmAndDeleteSelected() async {
+    final count = _batchSelectedIds.length;
+    if (count == 0) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete words?'),
+        content: Text(
+          'Delete $count ${count == 1 ? 'word' : 'words'}? '
+          'This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      final updated = await GlossaryService().deleteEntries(
+        _batchSelectedIds.toList(),
+      );
+      widget.onGlossaryChanged(updated);
+      if (!mounted) return;
+      setState(() {
+        _isBatchMode = false;
+        _batchSelectedIds.clear();
+        _cachedEntries = null; // force recompute
+      });
+    } on GlossaryException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
+  Future<void> _deleteEntryFromDetail(int chapter, String word) async {
+    try {
+      final updated = await GlossaryService().deleteEntry(
+        chapter: chapter,
+        word: word,
+      );
+      widget.onGlossaryChanged(updated);
+      if (!mounted) return;
+      setState(() {
+        _cachedEntries = null;
+      });
+    } on GlossaryException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
+  void _copyEntryToClipboard(GlossaryEntry entry) {
+    final text = '${entry.word} — ${entry.meaning}';
+    Clipboard.setData(ClipboardData(text: text));
+    HapticFeedback.lightImpact();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('Copied: $text'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+  }
+
   void _openEntryDetails(List<GlossaryEntry> entries, int entryIndex) {
     showModalBottomSheet<void>(
       context: context,
@@ -204,6 +311,9 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
             meaning: newMeaning,
           );
           widget.onGlossaryChanged(updated);
+        },
+        onDelete: (chapter, word) async {
+          await _deleteEntryFromDetail(chapter, word);
         },
       ),
     );
@@ -256,13 +366,27 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
     final muted = themeMuted(theme);
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddWordSheet,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Word'),
-        backgroundColor: AppColors.green,
-        foregroundColor: AppColors.canvas,
-      ),
+      floatingActionButton: _isBatchMode
+          ? FloatingActionButton.extended(
+              // onPressed stays non-null so an empty selection explains itself
+              // instead of showing a dead-looking disabled button.
+              onPressed: _batchSelectedIds.isEmpty
+                  ? () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Select at least one word')),
+                    )
+                  : _confirmAndDeleteSelected,
+              icon: const Icon(Icons.delete),
+              label: Text('Delete (${_batchSelectedIds.length})'),
+              backgroundColor: AppColors.red,
+              foregroundColor: Colors.white,
+            )
+          : FloatingActionButton.extended(
+              onPressed: _openAddWordSheet,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Word'),
+              backgroundColor: AppColors.green,
+              foregroundColor: AppColors.canvas,
+            ),
       drawer: ChapterDrawer(
         glossary: widget.glossary,
         selectedChapter: _chapterNumber,
@@ -280,6 +404,28 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
             tooltip: widget.darkMode ? 'Light mode' : 'Dark mode',
             onPressed: widget.onThemeChanged,
           ),
+          if (_isBatchMode)
+            TextButton(onPressed: _exitBatchMode, child: const Text('Cancel'))
+          else
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              tooltip: 'More options',
+              onSelected: (value) {
+                if (value == 'batch') _enterBatchMode();
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 'batch',
+                  child: Row(
+                    children: [
+                      Icon(Icons.checklist),
+                      SizedBox(width: 12),
+                      Text('Select multiple'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           const SizedBox(width: 4),
         ],
       ),
@@ -352,11 +498,24 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
                       if (item.letter != null) {
                         return LetterHeading(letter: item.letter!);
                       }
+                      final entry = item.entry!;
+                      final id = glossaryCompositeId(
+                        entry.chapterNumber,
+                        entry.word,
+                      );
                       return WordRow(
-                        entry: item.entry!,
+                        entry: entry,
                         showChapter: _chapterNumber == null,
-                        onTap: () =>
-                            _openEntryDetails(entries, item.entryIndex!),
+                        onTap: _isBatchMode
+                            ? () => _toggleBatchSelection(entry)
+                            : () =>
+                                  _openEntryDetails(entries, item.entryIndex!),
+                        onLongPress: _isBatchMode
+                            ? null
+                            : () => _copyEntryToClipboard(entry),
+                        isBatchMode: _isBatchMode,
+                        isSelectedForBatch: _batchSelectedIds.contains(id),
+                        onToggleSelection: () => _toggleBatchSelection(entry),
                       );
                     },
                   ),

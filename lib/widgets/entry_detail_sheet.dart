@@ -10,12 +10,14 @@ class EntryDetailSheet extends StatefulWidget {
     required this.entries,
     required this.initialIndex,
     required this.onEdit,
+    required this.onDelete,
   });
 
   final List<GlossaryEntry> entries;
   final int initialIndex;
   final Future<void> Function(int chapter, String word, String newMeaning)
   onEdit;
+  final Future<void> Function(int chapter, String word) onDelete;
 
   @override
   State<EntryDetailSheet> createState() => _EntryDetailSheetState();
@@ -36,6 +38,37 @@ class _EntryDetailSheetState extends State<EntryDetailSheet> {
       return;
     }
     setState(() => _index = nextIndex);
+  }
+
+  Future<void> _confirmDelete(GlossaryEntry entry) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete this word?'),
+        content: Text(
+          'Delete "${entry.word}" from chapter ${entry.chapterNumber}? '
+          'This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    // The sheet closes after a confirmed delete, whether the write succeeded
+    // or failed (failures surface as a SnackBar from the browser state).
+    await widget.onDelete(entry.chapterNumber, entry.word);
+    if (!mounted) return;
+    Navigator.of(context).pop();
   }
 
   void _openEditMeaning(GlossaryEntry entry) {
@@ -114,16 +147,42 @@ class _EntryDetailSheetState extends State<EntryDetailSheet> {
                             ),
                           ),
                         ),
-                        const Spacer(),
-                        TextButton.icon(
-                          // Trimmed padding: the chip plus the default button
-                          // width overflows the 345px sheet content width.
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                        Expanded(
+                          // Wrap keeps the two actions right-aligned on one
+                          // line at normal widths and wraps them instead of
+                          // overflowing the sheet on narrow screens.
+                          child: Wrap(
+                            spacing: 2,
+                            alignment: WrapAlignment.end,
+                            children: [
+                              TextButton.icon(
+                                // Trimmed padding: the chip plus default-width
+                                // buttons overflow the 345px sheet content.
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                ),
+                                icon: const Icon(Icons.edit, size: 16),
+                                label: const Text('Edit meaning'),
+                                onPressed: () => _openEditMeaning(entry),
+                              ),
+                              TextButton.icon(
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                  foregroundColor: AppColors.red,
+                                ),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  size: 16,
+                                ),
+                                label: const Text('Delete'),
+                                onPressed: () => _confirmDelete(entry),
+                              ),
+                            ],
                           ),
-                          icon: const Icon(Icons.edit, size: 16),
-                          label: const Text('Edit meaning'),
-                          onPressed: () => _openEditMeaning(entry),
                         ),
                       ],
                     ),

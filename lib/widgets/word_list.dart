@@ -144,11 +144,19 @@ class WordRow extends StatelessWidget {
     required this.entry,
     required this.showChapter,
     required this.onTap,
+    this.onLongPress,
+    this.isSelectedForBatch = false,
+    this.isBatchMode = false,
+    this.onToggleSelection,
   });
 
   final GlossaryEntry entry;
   final bool showChapter;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final bool isSelectedForBatch;
+  final bool isBatchMode;
+  final VoidCallback? onToggleSelection;
 
   @override
   Widget build(BuildContext context) {
@@ -157,15 +165,34 @@ class WordRow extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        // In batch mode the whole row toggles selection; the Checkbox consumes
+        // its own tap, so the row gesture never fires twice.
+        onTap: isBatchMode ? onToggleSelection : onTap,
+        onLongPress: onLongPress,
         child: Container(
           constraints: const BoxConstraints(minHeight: 68),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
           decoration: BoxDecoration(
+            color: isBatchMode && isSelectedForBatch
+                ? AppColors.green.withValues(alpha: 0.12)
+                : null,
             border: Border(bottom: BorderSide(color: theme.dividerColor)),
           ),
           child: Row(
             children: [
+              if (isBatchMode) ...[
+                SizedBox(
+                  width: 24,
+                  child: Checkbox(
+                    value: isSelectedForBatch,
+                    activeColor: AppColors.green,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                    onChanged: (_) => onToggleSelection?.call(),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
