@@ -93,6 +93,8 @@ class GlossaryBrowser extends StatefulWidget {
 class _GlossaryBrowserState extends State<GlossaryBrowser> {
   final _searchController = TextEditingController();
   final _itemScrollController = ItemScrollController();
+  final _searchFocusNode = FocusNode();
+  bool _searchFocused = false;
   int? _chapterNumber;
   String _query = '';
 
@@ -108,6 +110,17 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
   final Set<String> _batchSelectedIds = <String>{};
 
   @override
+  void initState() {
+    super.initState();
+    // The umlaut toolbar only shows while the field is focused or a query is
+    // active, which requires listening to focus changes.
+    _searchFocusNode.addListener(() {
+      if (!mounted) return;
+      setState(() => _searchFocused = _searchFocusNode.hasFocus);
+    });
+  }
+
+  @override
   void didUpdateWidget(GlossaryBrowser oldWidget) {
     super.didUpdateWidget(oldWidget);
     // An add/edit replaces the glossary object; the cached filter result is
@@ -119,6 +132,7 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
 
   @override
   void dispose() {
+    _searchFocusNode.dispose();
     _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
@@ -159,6 +173,24 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
       setState(() => _query = value);
       _scrollToTop();
     });
+  }
+
+  void _insertUmlaut(String ch) {
+    final text = _searchController.text;
+    final selection = _searchController.selection;
+
+    // Fall back to end-of-text when there's no valid selection.
+    final start = selection.isValid ? selection.start : text.length;
+    final end = selection.isValid ? selection.end : text.length;
+
+    final newText = text.replaceRange(start, end, ch);
+    _searchController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: start + ch.length),
+    );
+    // Reuse the existing debounced setter.
+    _setQuery(newText);
+    _searchFocusNode.requestFocus();
   }
 
   void _clearQuery() {
@@ -463,6 +495,7 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
             child: TextField(
               controller: _searchController,
+              focusNode: _searchFocusNode,
               onChanged: _setQuery,
               autocorrect: false,
               enableSuggestions: false,
@@ -480,6 +513,22 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
               ),
             ),
           ),
+          if (_searchFocused || _query.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Row(
+                children: [
+                  for (final ch in const ['ä', 'ö', 'ü', 'ß', 'Ä', 'Ö', 'Ü'])
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: _UmlautButton(
+                        character: ch,
+                        onPressed: () => _insertUmlaut(ch),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ResultSummary(count: entries.length, chapterLabel: _chapterLabel),
           AlphabetJumpBar(
             availableLetters: letterIndexes.keys.toSet(),
@@ -505,6 +554,7 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
                       );
                       return WordRow(
                         entry: entry,
+                        query: _query,
                         showChapter: _chapterNumber == null,
                         onTap: _isBatchMode
                             ? () => _toggleBatchSelection(entry)
@@ -521,6 +571,36 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
                   ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _UmlautButton extends StatelessWidget {
+  const _UmlautButton({required this.character, required this.onPressed});
+
+  final String character;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surfaceMuted,
+      borderRadius: BorderRadius.circular(6),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Text(
+            character,
+            style: const TextStyle(
+              color: AppColors.blue,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
       ),
     );
   }

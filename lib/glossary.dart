@@ -213,22 +213,141 @@ class GlossarySearch {
     return left.chapterNumber.compareTo(right.chapterNumber);
   }
 
+  /// Standard iterative Levenshtein edit distance between two strings.
+  static int levenshtein(String a, String b) {
+    if (a.isEmpty) return b.length;
+    if (b.isEmpty) return a.length;
+    final prev = List<int>.generate(b.length + 1, (i) => i);
+    final curr = List<int>.filled(b.length + 1, 0);
+    for (var i = 1; i <= a.length; i++) {
+      curr[0] = i;
+      for (var j = 1; j <= b.length; j++) {
+        final cost = a.codeUnitAt(i - 1) == b.codeUnitAt(j - 1) ? 0 : 1;
+        curr[j] = [
+          curr[j - 1] + 1,
+          prev[j] + 1,
+          prev[j - 1] + cost,
+        ].reduce((x, y) => x < y ? x : y);
+      }
+      for (var j = 0; j <= b.length; j++) {
+        prev[j] = curr[j];
+      }
+    }
+    return prev[b.length];
+  }
+
+  /// Returns a match score for [entry] against [normalizedQuery].
+  /// 0 means no match. Higher is better.
+  static int _scoreEntry(GlossaryEntry entry, String normalizedQuery) {
+    if (normalizedQuery.isEmpty) return 1;
+
+    final word = normalize(entry.word);
+    final meaning = normalize(entry.meaning);
+
+    // Exact / prefix / contains (word preferred over meaning).
+    if (word == normalizedQuery) return 100;
+    if (word.startsWith(normalizedQuery)) return 80;
+    if (meaning.startsWith(normalizedQuery)) return 60;
+    if (word.contains(normalizedQuery)) return 40;
+    if (meaning.contains(normalizedQuery)) return 20;
+
+    // Typo tolerance: only run for reasonably long queries.
+    if (normalizedQuery.length >= 4) {
+      final wordDist = levenshtein(word, normalizedQuery);
+      final maxWordDist = normalizedQuery.length <= 6 ? 1 : 2;
+      if (wordDist <= maxWordDist) {
+        return 30 - wordDist * 5;
+      }
+      // Also allow a prefix typo — "abnd" should match "abend".
+      if (word.length >= normalizedQuery.length) {
+        final prefix = word.substring(0, normalizedQuery.length);
+        final prefixDist = levenshtein(prefix, normalizedQuery);
+        if (prefixDist <= 1) {
+          return 25 - prefixDist * 5;
+        }
+      }
+    }
+
+    return 0;
+  }
+
+  /// Filters glossary entries by chapter and query.
+  ///
+  /// When [query] is empty, results are returned in alphabetical order (as
+  /// today). When [query] is non-empty, results are ordered by score — highest
+  /// relevance first — then alphabetically within the same score.
   static List<GlossaryEntry> filter(
     GlossaryData glossary, {
     int? chapterNumber,
     String query = '',
   }) {
     final normalizedQuery = normalize(query.trim());
-    final filtered = glossary.entries.where((entry) {
-      final matchesChapter =
-          chapterNumber == null || entry.chapterNumber == chapterNumber;
-      final matchesQuery =
-          normalizedQuery.isEmpty ||
-          normalize('${entry.word} ${entry.meaning}').contains(normalizedQuery);
-      return matchesChapter && matchesQuery;
+
+    final chapterFiltered = glossary.entries.where((entry) {
+      return chapterNumber == null || entry.chapterNumber == chapterNumber;
     }).toList();
 
-    filtered.sort(compare);
-    return filtered;
+    if (normalizedQuery.isEmpty) {
+      chapterFiltered.sort(compare);
+      return chapterFiltered;
+    }
+
+    final scored = <({GlossaryEntry entry, int score})>[];
+    for (final entry in chapterFiltered) {
+      final score = _scoreEntry(entry, normalizedQuery);
+      if (score > 0) {
+        scored.add((entry: entry, score: score));
+      }
+    }
+
+    scored.sort((a, b) {
+      final byScore = b.score.compareTo(a.score);
+      if (byScore != 0) return byScore;
+      return compare(a.entry, b.entry);
+    });
+
+    return [for (final item in scored) item.entry];
+  }
+
+  /// Returns the substring ranges in [text] that match [query] using
+  /// the same normalization applied to entries. Returns empty list if no match.
+  ///
+  /// Because normalization can change string length (ä→ae), we do a pragmatic
+  /// two-pass approach: first try to find the normalized query inside the
+  /// normalized text and map back; if that fails, return an empty list.
+  static List<(int, int)> matchRanges(String text, String query) {
+    final normalizedQuery = normalize(query.trim());
+    if (normalizedQuery.isEmpty) return const [];
+
+    final lower = text.toLowerCase();
+    final directIndex = lower.indexOf(query.trim().toLowerCase());
+    if (directIndex >= 0) {
+      return [(directIndex, directIndex + query.trim().length)];
+    }
+
+    // Umlaut-folded fallback: search normalized text, then find the closest
+    // original range by walking the original and folding as we go.
+    final normalizedText = normalize(text);
+    final normalizedIndex = normalizedText.indexOf(normalizedQuery);
+    if (normalizedIndex < 0) return const [];
+
+    // Map normalized index back to original index by folding one character
+    // at a time and counting.
+    var normalizedPos = 0;
+    var originalStart = -1;
+    var originalEnd = text.length;
+    for (var i = 0; i < text.length; i++) {
+      if (normalizedPos == normalizedIndex && originalStart == -1) {
+        originalStart = i;
+      }
+      final folded = normalize(text[i]);
+      normalizedPos += folded.length;
+      if (normalizedPos >= normalizedIndex + normalizedQuery.length) {
+        originalEnd = i + 1;
+        break;
+      }
+    }
+    if (originalStart == -1) return const [];
+    return [(originalStart, originalEnd)];
   }
 }

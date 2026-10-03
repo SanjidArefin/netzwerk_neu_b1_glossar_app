@@ -61,10 +61,12 @@ void main() {
       );
       await tester.enterText(searchField, 'koennen');
       await tester.pumpAndSettle();
-      expect(find.text('können'), findsOneWidget);
+      // With a non-empty query the row renders a RichText highlight, which
+      // find.text only reports when findRichText is enabled.
+      expect(find.text('können', findRichText: true), findsOneWidget);
       expect(find.text('kalt'), findsNothing);
 
-      await tester.tap(find.text('können'));
+      await tester.tap(find.text('können', findRichText: true));
       await tester.pumpAndSettle();
       expect(find.text('ENGLISH'), findsOneWidget);
       expect(find.text('can'), findsNWidgets(2));

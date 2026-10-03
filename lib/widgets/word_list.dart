@@ -142,6 +142,7 @@ class WordRow extends StatelessWidget {
   const WordRow({
     super.key,
     required this.entry,
+    this.query = '',
     required this.showChapter,
     required this.onTap,
     this.onLongPress,
@@ -151,6 +152,7 @@ class WordRow extends StatelessWidget {
   });
 
   final GlossaryEntry entry;
+  final String query;
   final bool showChapter;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
@@ -198,20 +200,18 @@ class WordRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      entry.word,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    _HighlightedText(
+                      text: entry.word,
+                      query: query,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Text(
-                      entry.meaning,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    _HighlightedText(
+                      text: entry.meaning,
+                      query: query,
                       style: TextStyle(color: muted, fontSize: 14),
                     ),
                   ],
@@ -234,6 +234,69 @@ class WordRow extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _HighlightedText extends StatelessWidget {
+  const _HighlightedText({
+    required this.text,
+    required this.query,
+    required this.style,
+  });
+
+  final String text;
+  final String query;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    if (query.trim().isEmpty) {
+      return Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      );
+    }
+    final ranges = GlossarySearch.matchRanges(text, query);
+    if (ranges.isEmpty) {
+      return Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      );
+    }
+    final spans = <TextSpan>[];
+    var cursor = 0;
+    for (final (start, end) in ranges) {
+      if (start > cursor) {
+        spans.add(TextSpan(text: text.substring(cursor, start)));
+      }
+      spans.add(
+        // The matched part gets a green underline, per the desktop design.
+        // Text color is inherited: forcing AppColors.green would be hard to
+        // read on the light theme, so only the underline is always green.
+        TextSpan(
+          text: text.substring(start, end),
+          style: style.copyWith(
+            fontWeight: FontWeight.w900,
+            decoration: TextDecoration.underline,
+            decorationColor: AppColors.green,
+            decorationThickness: 2,
+          ),
+        ),
+      );
+      cursor = end;
+    }
+    if (cursor < text.length) {
+      spans.add(TextSpan(text: text.substring(cursor)));
+    }
+    return RichText(
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      text: TextSpan(style: style, children: spans),
     );
   }
 }

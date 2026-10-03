@@ -56,6 +56,27 @@ void main() {
     );
   });
 
+  test('fuzzy search tolerates a single typo', () {
+    const glossary = GlossaryData(
+      title: 'Test',
+      totalEntries: 3,
+      chapters: [
+        GlossaryChapter(
+          number: 1,
+          title: 'Chapter 1',
+          entries: [
+            GlossaryEntry(chapterNumber: 1, word: 'abend', meaning: 'evening'),
+            GlossaryEntry(chapterNumber: 1, word: 'aber', meaning: 'but'),
+            GlossaryEntry(chapterNumber: 1, word: 'zeit', meaning: 'time'),
+          ],
+        ),
+      ],
+    );
+
+    final results = GlossarySearch.filter(glossary, query: 'abnd');
+    expect(results.first.word, 'abend');
+  });
+
   test('malformed and duplicate data is rejected', () {
     const duplicate = '''
       {"title":"Test","totalEntries":2,"chapters":[
