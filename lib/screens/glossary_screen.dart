@@ -140,6 +140,13 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
 
   List<GlossaryEntry> get _visibleEntries => _computeVisibleEntries();
 
+  /// Dismisses the search keyboard without changing the query. Called
+  /// before any non-search interaction so focus is not restored when
+  /// overlays close.
+  void _unfocusSearch() {
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
   List<GlossaryEntry> _computeVisibleEntries() {
     if (_cachedEntries != null &&
         _cachedChapterForFilter == _chapterNumber &&
@@ -162,6 +169,7 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
   }
 
   void _selectChapter(int? chapterNumber) {
+    _unfocusSearch();
     setState(() => _chapterNumber = chapterNumber);
     _scrollToTop();
   }
@@ -226,6 +234,7 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
   }
 
   void _enterBatchMode() {
+    _unfocusSearch();
     setState(() {
       _isBatchMode = true;
       _batchSelectedIds.clear();
@@ -233,6 +242,7 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
   }
 
   void _exitBatchMode() {
+    _unfocusSearch();
     setState(() {
       _isBatchMode = false;
       _batchSelectedIds.clear();
@@ -240,6 +250,7 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
   }
 
   void _toggleBatchSelection(GlossaryEntry entry) {
+    _unfocusSearch();
     setState(() {
       final id = glossaryCompositeId(entry.chapterNumber, entry.word);
       if (_batchSelectedIds.contains(id)) {
@@ -329,6 +340,7 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
   }
 
   void _openEntryDetails(List<GlossaryEntry> entries, int entryIndex) {
+    _unfocusSearch();
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -352,6 +364,7 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
   }
 
   Future<void> _openAddWordSheet() async {
+    _unfocusSearch();
     final service = GlossaryService();
     final initialChapter = _chapterNumber ?? 1;
     await showModalBottomSheet(
@@ -444,6 +457,7 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
               icon: const Icon(Icons.more_vert),
               tooltip: 'More options',
               onSelected: (value) {
+                _unfocusSearch();
                 if (value == 'batch') _enterBatchMode();
               },
               itemBuilder: (context) => const [
