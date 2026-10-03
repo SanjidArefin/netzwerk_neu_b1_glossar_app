@@ -25,7 +25,7 @@ void main() {
       chapters: [
         GlossaryChapter(
           number: 1,
-          title: 'Kapitel 1',
+          title: 'Chapter 1',
           entries: [
             GlossaryEntry(chapterNumber: 1, word: 'zwei', meaning: 'two'),
             GlossaryEntry(chapterNumber: 1, word: 'ärztin', meaning: 'doctor'),
@@ -33,7 +33,7 @@ void main() {
         ),
         GlossaryChapter(
           number: 2,
-          title: 'Kapitel 2',
+          title: 'Chapter 2',
           entries: [
             GlossaryEntry(chapterNumber: 2, word: 'groß', meaning: 'large'),
             GlossaryEntry(chapterNumber: 2, word: 'abend', meaning: 'evening'),
@@ -59,7 +59,7 @@ void main() {
   test('malformed and duplicate data is rejected', () {
     const duplicate = '''
       {"title":"Test","totalEntries":2,"chapters":[
-        {"number":1,"title":"Kapitel 1","entries":[
+        {"number":1,"title":"Chapter 1","entries":[
           {"word":"abend","meaning":"evening"},
           {"word":"abend","meaning":"night"}
         ]}

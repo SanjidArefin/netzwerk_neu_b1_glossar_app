@@ -41,7 +41,7 @@ class ChapterDrawer extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    'KAPITEL',
+                    'CHAPTERS',
                     style: TextStyle(
                       color: muted,
                       fontSize: 12,
@@ -61,7 +61,7 @@ class ChapterDrawer extends StatelessWidget {
               ),
             ),
             ChapterTile(
-              title: 'Alle Kapitel',
+              title: 'All Chapters',
               count: glossary.totalEntries,
               selected: selectedChapter == null,
               onTap: () => onChapterChanged(null),
@@ -73,7 +73,7 @@ class ChapterDrawer extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final chapter = glossary.chapters[index];
                   return ChapterTile(
-                    title: chapter.title,
+                    title: 'Chapter ${chapter.number}',
                     count: chapter.entries.length,
                     selected: selectedChapter == chapter.number,
                     onTap: () => onChapterChanged(chapter.number),
@@ -92,7 +92,7 @@ class ChapterDrawer extends StatelessWidget {
                   Container(width: 8, height: 8, color: AppColors.yellow),
                   const SizedBox(width: 8),
                   Text(
-                    '${glossary.totalEntries} Woerter',
+                    '${glossary.totalEntries} words',
                     style: TextStyle(color: muted, fontSize: 12),
                   ),
                 ],

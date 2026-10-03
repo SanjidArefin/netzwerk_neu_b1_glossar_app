@@ -21,7 +21,7 @@ class ResultSummary extends StatelessWidget {
       child: Row(
         children: [
           Text(
-            '$count ${count == 1 ? 'Eintrag' : 'Eintraege'}',
+            '$count ${count == 1 ? 'entry' : 'entries'}',
             style: TextStyle(
               color: muted,
               fontSize: 12,
@@ -82,9 +82,7 @@ class AlphabetJumpBar extends StatelessWidget {
           final letter = germanAlphabet[index];
           final available = availableLetters.contains(letter);
           return Tooltip(
-            message: available
-                ? 'Zu $letter springen'
-                : 'Keine Woerter mit $letter',
+            message: available ? 'Jump to $letter' : 'No words with $letter',
             child: SizedBox(
               width: 31,
               child: Material(
@@ -195,7 +193,7 @@ class WordRow extends StatelessWidget {
               if (showChapter) ...[
                 const SizedBox(width: 12),
                 Text(
-                  'K${entry.chapterNumber}',
+                  '${entry.chapterNumber}',
                   style: TextStyle(
                     color: muted,
                     fontSize: 12,

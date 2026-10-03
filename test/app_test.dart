@@ -40,23 +40,23 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final homeContext = tester.element(find.text('Wortschatz'));
+      final homeContext = tester.element(find.text('Vocabulary'));
       expect(Theme.of(homeContext).brightness, Brightness.dark);
       expect(find.text('abend'), findsOneWidget);
-      expect(find.text('K1'), findsNWidgets(2));
+      expect(find.text('1'), findsNWidgets(2));
 
       await tester.tap(find.byTooltip('Open navigation menu'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Kapitel 2'));
+      await tester.tap(find.text('Chapter 2'));
       await tester.pumpAndSettle();
 
-      expect(find.text('K2'), findsNothing);
+      expect(find.text('2'), findsNothing);
       expect(find.text('können'), findsOneWidget);
 
       final searchField = find.byWidgetPredicate(
         (widget) =>
             widget is TextField &&
-            widget.decoration?.hintText == 'Wort oder Bedeutung suchen',
+            widget.decoration?.hintText == 'Search word or meaning',
       );
       await tester.enterText(searchField, 'koennen');
       await tester.pumpAndSettle();
@@ -76,10 +76,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Hellmodus'));
+    await tester.tap(find.byTooltip('Light mode'));
     await tester.pumpAndSettle();
 
-    final homeContext = tester.element(find.text('Wortschatz'));
+    final homeContext = tester.element(find.text('Vocabulary'));
     expect(Theme.of(homeContext).brightness, Brightness.light);
   });
 }

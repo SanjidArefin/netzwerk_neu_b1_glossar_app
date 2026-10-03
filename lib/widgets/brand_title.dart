@@ -36,7 +36,7 @@ class BrandTitle extends StatelessWidget {
               style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800),
             ),
             Text(
-              'Glossar',
+              'Glossary',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
             ),
           ],

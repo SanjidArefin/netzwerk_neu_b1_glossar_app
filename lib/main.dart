@@ -33,7 +33,7 @@ class _B1GlossarAppState extends State<B1GlossarApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'B1 Glossar',
+      title: 'B1 Glossary',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(_darkMode ? Brightness.dark : Brightness.light),
       home: GlossaryHome(

@@ -78,7 +78,7 @@ class _EntryDetailSheetState extends State<EntryDetailSheet> {
                             ? const Color(0xFF4B3D12)
                             : const Color(0xFFFFF3C0),
                         child: Text(
-                          'Kapitel ${entry.chapterNumber}',
+                          'Chapter ${entry.chapterNumber}',
                           style: const TextStyle(
                             color: Color(0xFF9A7600),
                             fontSize: 12,
@@ -127,7 +127,7 @@ class _EntryDetailSheetState extends State<EntryDetailSheet> {
                   children: [
                     DetailArrowButton(
                       icon: Icons.arrow_back,
-                      tooltip: 'Vorheriges Wort',
+                      tooltip: 'Previous word',
                       enabled: _index > 0,
                       onPressed: () => _changeEntry(-1),
                     ),
@@ -144,7 +144,7 @@ class _EntryDetailSheetState extends State<EntryDetailSheet> {
                     ),
                     DetailArrowButton(
                       icon: Icons.arrow_forward,
-                      tooltip: 'Naechstes Wort',
+                      tooltip: 'Next word',
                       enabled: _index < widget.entries.length - 1,
                       onPressed: () => _changeEntry(1),
                     ),

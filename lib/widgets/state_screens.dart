@@ -41,7 +41,7 @@ class GlossaryLoadError extends StatelessWidget {
               const Icon(Icons.error_outline, color: AppColors.red, size: 40),
               const SizedBox(height: 16),
               const Text(
-                'Glossardaten konnten nicht geladen werden.',
+                'Failed to load glossary data.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
               ),
@@ -72,7 +72,7 @@ class EmptyResults extends StatelessWidget {
           Icon(Icons.search_off, size: 36, color: muted),
           const SizedBox(height: 12),
           Text(
-            'Keine passenden Woerter gefunden.',
+            'No matching words found.',
             style: TextStyle(color: muted, fontWeight: FontWeight.w700),
           ),
         ],

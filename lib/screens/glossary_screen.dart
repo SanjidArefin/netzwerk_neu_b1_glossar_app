@@ -115,7 +115,7 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
   }
 
   String get _chapterLabel {
-    return _chapterNumber == null ? 'Alle Kapitel' : 'Kapitel $_chapterNumber';
+    return _chapterNumber == null ? 'All Chapters' : 'Chapter $_chapterNumber';
   }
 
   void _selectChapter(int? chapterNumber) {
@@ -200,7 +200,7 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
         actions: [
           IconButton(
             icon: Icon(widget.darkMode ? Icons.light_mode : Icons.dark_mode),
-            tooltip: widget.darkMode ? 'Hellmodus' : 'Dunkelmodus',
+            tooltip: widget.darkMode ? 'Light mode' : 'Dark mode',
             onPressed: widget.onThemeChanged,
           ),
           const SizedBox(width: 4),
@@ -225,7 +225,7 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    _query.trim().isEmpty ? 'Wortschatz' : 'Suchergebnisse',
+                    _query.trim().isEmpty ? 'Vocabulary' : 'Search Results',
                     style: const TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
@@ -245,13 +245,13 @@ class _GlossaryBrowserState extends State<GlossaryBrowser> {
               enableSuggestions: false,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'Wort oder Bedeutung suchen',
+                hintText: 'Search word or meaning',
                 prefixIcon: const Icon(Icons.search, color: AppColors.green),
                 suffixIcon: _query.isEmpty
                     ? null
                     : IconButton(
                         icon: const Icon(Icons.close),
-                        tooltip: 'Suche leeren',
+                        tooltip: 'Clear search',
                         onPressed: _clearQuery,
                       ),
               ),
