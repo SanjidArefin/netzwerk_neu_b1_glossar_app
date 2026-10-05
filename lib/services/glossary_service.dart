@@ -49,7 +49,7 @@ class GlossaryService {
     _validateWord(cleanWord);
     _validateMeaning(cleanMeaning);
     _ensureChapterExists(glossary, chapter);
-    _ensureNotDuplicate(glossary, cleanWord);
+    _ensureNotDuplicate(glossary, chapter, cleanWord);
 
     final raw = await _readRaw();
     final chapters = raw['chapters'] as List;
@@ -219,13 +219,21 @@ class GlossaryService {
     }
   }
 
-  void _ensureNotDuplicate(GlossaryData glossary, String word) {
+  /// Rejects a word that already exists in the TARGET chapter.
+  ///
+  /// Cross-chapter duplicates are allowed: the same German word may appear
+  /// in multiple chapters (e.g. "abend" is in chapters 1, 3, 4, ...) because
+  /// each entry is chapter-scoped. Only within-chapter duplicates are
+  /// rejected, mirroring the strict parser in glossary.dart which uses
+  /// per-chapter uniqueness + a global "chapter-word" composite id.
+  void _ensureNotDuplicate(GlossaryData glossary, int chapter, String word) {
+    final targetChapter = glossary.chapters.firstWhere(
+      (c) => c.number == chapter,
+    );
     final lowered = word.toLowerCase();
-    for (final chapter in glossary.chapters) {
-      for (final entry in chapter.entries) {
-        if (entry.word.toLowerCase() == lowered) {
-          throw GlossaryException('"$word" is already in the glossary.');
-        }
+    for (final entry in targetChapter.entries) {
+      if (entry.word.toLowerCase() == lowered) {
+        throw GlossaryException('"$word" is already in Chapter $chapter.');
       }
     }
   }
